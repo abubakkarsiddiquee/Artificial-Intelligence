@@ -1,2 +1,2 @@
 # Artificial-Intelligence
-Python repository featuring Star Search, Hill Climbing, Simulated Annealing, and KNN algorithms for AI tasks. Dive into practical implementations and documentation. 
+Python repository featuring A* Search, Hill Climbing, Simulated Annealing, and KNN algorithms, Logistic regression + Sklearn library, K means Clustering for AI tasks. Dive into practical implementations and documentation. 
