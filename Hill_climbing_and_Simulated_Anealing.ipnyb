@@ -1,0 +1,124 @@
+import random
+import math
+
+random.seed(100)
+
+class Puzzle:
+    def __init__(self, state):
+        self.state = state
+        self.size = int(math.sqrt(len(state)))
+
+    def successors(self):
+        successors = []
+        blank_index = self.state.index(0)
+        if blank_index % self.size != 0:
+            new_state = self.state[:]
+            new_state[blank_index], new_state[blank_index - 1] = new_state[blank_index - 1], new_state[blank_index]
+            successors.append(new_state)
+        if blank_index % self.size != self.size - 1:
+            new_state = self.state[:]
+            new_state[blank_index], new_state[blank_index + 1] = new_state[blank_index + 1], new_state[blank_index]
+            successors.append(new_state)
+        if blank_index >= self.size:
+            new_state = self.state[:]
+            new_state[blank_index], new_state[blank_index - self.size] = new_state[blank_index - self.size], new_state[blank_index]
+            successors.append(new_state)
+        if blank_index < self.size * (self.size - 1):
+            new_state = self.state[:]
+            new_state[blank_index], new_state[blank_index + self.size] = new_state[blank_index + self.size], new_state[blank_index]
+            successors.append(new_state)
+        return successors
+
+    def misplaced_tiles(self):
+        return sum(s != g for s, g in zip(self.state, range(len(self.state))))
+
+def hill_climbing(puzzle):
+    current_state = puzzle.state
+    current_cost = puzzle.misplaced_tiles()
+
+    while True:
+        neighbors = puzzle.successors()
+        best_neighbor = min(neighbors, key=lambda state: Puzzle(state).misplaced_tiles())
+
+        if Puzzle(best_neighbor).misplaced_tiles() >= current_cost:
+            break  # Stop if the best neighbor doesn't improve the current state
+
+        current_state = best_neighbor
+        current_cost = Puzzle(best_neighbor).misplaced_tiles()
+
+    return current_state, current_cost
+
+def simulated_annealing(puzzle, initial_temperature=100.0, cooling_rate=0.95, max_iterations=1000):
+    current_state = puzzle.state
+    current_cost = puzzle.misplaced_tiles()
+    temperature = initial_temperature
+
+    for iteration in range(1, max_iterations + 1):
+        if current_cost == 0:
+            return current_state, current_cost  # Goal
+
+        temperature = initial_temperature * (1 - iteration / max_iterations)  # Linear cooling schedule
+
+        blank_index = current_state.index(0)
+        while True:
+            direction = random.randint(0, 3)
+            if direction == 0 and blank_index % puzzle.size != 0:
+                new_index = blank_index - 1
+            elif direction == 1 and blank_index % puzzle.size != puzzle.size - 1:
+                new_index = blank_index + 1
+            elif direction == 2 and blank_index >= puzzle.size:
+                new_index = blank_index - puzzle.size
+            elif direction == 3 and blank_index < puzzle.size * (puzzle.size - 1):
+                new_index = blank_index + puzzle.size
+            else:
+                continue
+            break
+
+        next_state = current_state[:]
+        next_state[blank_index], next_state[new_index] = next_state[new_index], next_state[blank_index]
+
+        next_cost = Puzzle(next_state).misplaced_tiles()
+
+        print(f"Neighbor {next_state} h={next_cost}", end="  ")  # Print the heuristic value for the next state
+
+        delta_e = next_cost - current_cost
+
+        if delta_e < 0 or (temperature > 0 and 0.999 < math.exp(-delta_e / temperature)):
+            current_state = next_state
+            current_cost = next_cost
+            print()
+        else:
+            print("Rejected")
+
+    return None, None
+
+
+def parse_input(file_name):
+    with open(file_name, 'r') as file:
+        numbers = [int(num) for line in file for num in line.strip().split()]
+    return numbers
+
+
+file_name = "/content/input.txt"
+initial_state = parse_input(file_name)
+
+# Hill Climbing
+hill_climbing_solution, hill_climbing_cost = hill_climbing(Puzzle(initial_state))
+if hill_climbing_solution:
+    print(f"Solution State (Hill Climbing): {hill_climbing_solution} h={hill_climbing_cost}")
+else:
+    print("Hill Climbing did not find a solution after max iterations.")
+
+
+# Simulated Annealing
+puzzle = Puzzle(initial_state)
+solution_state, solution_cost = simulated_annealing(puzzle)
+
+if solution_state:
+    print(f"Solution State (Simulated Annealing): {solution_state} h={solution_cost}")
+else:
+    print("Simulated Annealing did not find a solution within the max iterations.")
+
+
+if solution_state:
+    print(f"Solution State: {solution_state} h={solution_cost}")
